@@ -3,67 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>NatureLens — Real AI Bird & Plant Identifier</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <title>NatureLens — Powered by iNaturalist</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { font-family: 'Inter', sans-serif; }
-        body {
-            background: linear-gradient(145deg, #f6f9f0 0%, #e9f3e0 100%);
-            min-height: 100vh;
-        }
-        .animate-fade {
-            animation: fadeIn 0.3s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
+        body { background: linear-gradient(145deg, #f6f9f0 0%, #e9f3e0 100%); min-height: 100vh; }
+        .animate-fade { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
         button:active { transform: scale(0.96); }
-        .loading-spinner {
-            border: 3px solid #e2e8f0;
-            border-top: 3px solid #059669;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .loading-spinner { border: 3px solid #e2e8f0; border-top: 3px solid #059669; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .taxon-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
     </style>
 </head>
-<body class="antialiased">
-
+<body>
     <div id="app" class="max-w-2xl mx-auto px-4 py-5 pb-24">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6 pt-2">
+        <!-- Header with ad placeholder -->
+        <div class="flex justify-between items-center mb-4 pt-2">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-leaf text-emerald-600 text-2xl"></i> 
-                    NatureLens
+                    <i class="fas fa-leaf text-emerald-600 text-2xl"></i> NatureLens
                 </h1>
-                <p class="text-sm text-gray-500 font-medium">real AI · identifies birds & plants</p>
+                <p class="text-sm text-gray-500 font-medium">🌿 powered by iNaturalist · free & accurate</p>
             </div>
-            <button id="settingsBtn" class="bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-sm text-gray-700 w-9 h-9 flex items-center justify-center">
-                <i class="fas fa-key"></i>
-            </button>
+            <!-- Ad placeholder (shows to free users) -->
+            <div id="adBadge" class="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-full font-semibold border border-yellow-300">
+                <i class="fas fa-ad"></i> Ad supported
+            </div>
         </div>
 
-        <!-- API Key Modal -->
-        <div id="apiModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-key text-emerald-600"></i> Gemini API Key</h2>
-                    <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-                </div>
-                <p class="text-sm text-gray-600 mb-3">Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" class="text-emerald-600 underline">Google AI Studio</a> (free tier, 60 req/min).</p>
-                <input type="password" id="apiKeyInput" placeholder="Paste your API key here" class="w-full border border-gray-300 rounded-xl px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <button id="saveApiKeyBtn" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-semibold">Save Key</button>
-                <p class="text-xs text-gray-400 mt-3">Key stored locally in your browser.</p>
-            </div>
+        <!-- AD BANNER (simulated for demo) -->
+        <div id="adBanner" class="bg-white/80 backdrop-blur-sm rounded-xl p-2 mb-4 text-center text-[10px] text-gray-400 border border-gray-200/50 shadow-sm">
+            <i class="fas fa-ad text-emerald-400 mr-1"></i> Sponsor: <span class="font-medium text-gray-600">NatureLens Pro</span> — 
+            <span id="adFreeCta" class="text-emerald-600 font-semibold cursor-pointer hover:underline">Remove ads → $1/month</span>
         </div>
 
         <!-- Tabs -->
@@ -83,8 +57,8 @@
                     <img id="imagePreview" class="w-full rounded-2xl border-2 border-emerald-200 bg-gray-100 aspect-video object-cover hidden" alt="Preview">
                     <div id="placeholderPreview" class="w-full rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 aspect-video flex flex-col items-center justify-center text-emerald-600">
                         <i class="fas fa-tree text-4xl mb-2 opacity-70"></i>
-                        <p class="text-sm font-medium">Upload a bird or plant photo</p>
-                        <p class="text-xs text-gray-500">AI will identify it</p>
+                        <p class="text-sm font-medium">Upload a bird, plant, or animal</p>
+                        <p class="text-xs text-gray-500">iNaturalist AI will identify it</p>
                     </div>
                     
                     <div class="flex flex-wrap gap-3 justify-center mt-5 w-full">
@@ -99,20 +73,20 @@
                 </div>
             </div>
 
-            <!-- Loading Indicator -->
+            <!-- Loading -->
             <div id="loadingIndicator" class="hidden bg-white rounded-2xl p-5 text-center">
                 <div class="flex flex-col items-center gap-3">
                     <div class="loading-spinner"></div>
-                    <p class="text-emerald-600 font-medium">AI is analyzing your photo...</p>
-                    <p class="text-xs text-gray-400">This takes 2-3 seconds</p>
+                    <p class="text-emerald-600 font-medium">🌍 Consulting iNaturalist AI...</p>
+                    <p class="text-xs text-gray-400">This takes 2-4 seconds</p>
                 </div>
             </div>
 
             <!-- Result Card -->
             <div id="resultCard" class="bg-white rounded-2xl shadow-md p-5 border-l-8 border-emerald-400 hidden animate-fade">
                 <div class="flex items-start gap-3">
-                    <div class="bg-emerald-100 p-3 rounded-full">
-                        <i id="resultIcon" class="fas fa-feather-alt text-emerald-600 text-xl"></i>
+                    <div class="taxon-icon bg-emerald-100 text-emerald-600">
+                        <i id="resultIcon" class="fas fa-leaf"></i>
                     </div>
                     <div class="flex-1">
                         <div class="flex justify-between items-start flex-wrap gap-2">
@@ -121,7 +95,10 @@
                         </div>
                         <p id="resultScientific" class="text-sm text-gray-500 italic mt-0.5">-</p>
                         <p id="resultDesc" class="text-gray-600 text-sm mt-2 leading-relaxed">-</p>
-                        <div id="confidenceBox" class="mt-2 text-xs text-gray-400"></div>
+                        <div id="confidenceBox" class="mt-2 text-xs text-gray-400 flex items-center gap-2">
+                            <span class="bg-emerald-50 px-2 py-0.5 rounded-full text-emerald-700 text-[10px]">iNaturalist</span>
+                            <span id="confidenceText">Confidence: --</span>
+                        </div>
                         <button id="saveToJournalBtn" class="mt-3 bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1 border border-emerald-200 hover:bg-emerald-100 transition">
                             <i class="fas fa-save"></i> Save to Journal
                         </button>
@@ -129,7 +106,7 @@
                 </div>
             </div>
 
-            <!-- Error Message -->
+            <!-- Error -->
             <div id="errorMsg" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm">
                 <i class="fas fa-exclamation-triangle mr-2"></i> <span id="errorText"></span>
             </div>
@@ -152,14 +129,48 @@
     </div>
 
     <script>
-        // ---------- IndexedDB for Journal ----------
+        // ---------- MONETIZATION LAYER ----------
+        // Simple state: free user by default, can "subscribe"
+        let isAdFree = localStorage.getItem('naturelens_adfree') === 'true';
+        const adBanner = document.getElementById('adBanner');
+        const adBadge = document.getElementById('adBadge');
+        const adFreeCta = document.getElementById('adFreeCta');
+
+        // Toggle ad state
+        function updateAdState() {
+            if (isAdFree) {
+                adBanner.style.display = 'none';
+                adBadge.innerHTML = '<i class="fas fa-crown text-amber-500"></i> Pro';
+                adBadge.className = 'bg-amber-100 text-amber-700 text-[10px] px-2 py-1 rounded-full font-semibold border border-amber-300';
+            } else {
+                adBanner.style.display = 'block';
+                adBadge.innerHTML = '<i class="fas fa-ad"></i> Ad supported';
+                adBadge.className = 'bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-full font-semibold border border-yellow-300';
+            }
+        }
+
+        // Click to "subscribe" (simulated payment)
+        adFreeCta.addEventListener('click', () => {
+            if (confirm('Upgrade to NatureLens Pro for $1/month?\n\n✅ No ads\n✅ Unlimited identifications\n✅ Priority support')) {
+                isAdFree = true;
+                localStorage.setItem('naturelens_adfree', 'true');
+                updateAdState();
+                alert('🎉 Thank you! Ads removed. Enjoy NatureLens Pro!');
+            }
+        });
+
+        // Also allow "downgrade" (for testing) via console
+        window.resetAd = () => { isAdFree = false; localStorage.setItem('naturelens_adfree', 'false'); updateAdState(); };
+
+        updateAdState();
+
+        // ---------- INDEXEDDB (JOURNAL) ----------
         let db = null;
         let journalEntries = [];
-        let apiKey = localStorage.getItem('gemini_api_key') || '';
         let currentImageDataURL = null;
         let currentIdentification = null;
 
-        // DOM Elements
+        // DOM refs
         const imagePreview = document.getElementById('imagePreview');
         const placeholderDiv = document.getElementById('placeholderPreview');
         const uploadBtn = document.getElementById('uploadImageBtn');
@@ -174,13 +185,8 @@
         const resultDesc = document.getElementById('resultDesc');
         const resultTypeSpan = document.getElementById('resultType');
         const resultIcon = document.getElementById('resultIcon');
-        const confidenceBox = document.getElementById('confidenceBox');
+        const confidenceText = document.getElementById('confidenceText');
         const saveJournalBtn = document.getElementById('saveToJournalBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const apiModal = document.getElementById('apiModal');
-        const apiKeyInput = document.getElementById('apiKeyInput');
-        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
-        const closeModalBtn = document.getElementById('closeModalBtn');
         const tabIdentify = document.getElementById('tabIdentify');
         const tabJournal = document.getElementById('tabJournal');
         const identifyPanel = document.getElementById('identifyPanel');
@@ -189,84 +195,90 @@
         const journalCountSpan = document.getElementById('journalCount');
         const clearJournalBtn = document.getElementById('clearJournalBtn');
 
-        // Check API key on load
-        if (!apiKey) {
-            setTimeout(() => { apiModal.classList.remove('hidden'); }, 500);
+        // ---------- iNATURALIST API ----------
+        async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
+            // Step 1: Create an observation (upload photo)
+            const formData = new FormData();
+            const blob = base64ToBlob(imageBase64, mimeType);
+            formData.append('photo[file]', blob, 'observation.jpg');
+
+            const uploadResponse = await fetch('https://www.inaturalist.org/observations.json', {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error(`Upload failed: ${uploadResponse.status}`);
+            }
+
+            const uploadData = await uploadResponse.json();
+            const observationId = uploadData.id;
+
+            // Step 2: Get AI identification results
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for processing
+
+            const visionResponse = await fetch(`https://api.inaturalist.org/v1/observations/${observationId}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!visionResponse.ok) {
+                throw new Error(`Vision API failed: ${visionResponse.status}`);
+            }
+
+            const visionData = await visionResponse.json();
+            
+            // Parse the result
+            const result = visionData.results?.[0];
+            if (!result || !result.taxon) {
+                throw new Error('No identification found. Try a clearer photo.');
+            }
+
+            const taxon = result.taxon;
+            const category = taxon.rank_level <= 10 ? 'species' : 'higher taxonomy';
+            
+            // Map icon based on taxon category
+            let icon = 'fa-leaf';
+            if (taxon.ancestors?.some(a => a.name === 'Aves')) icon = 'fa-dove';
+            else if (taxon.ancestors?.some(a => a.name === 'Plantae')) icon = 'fa-seedling';
+            else if (taxon.ancestors?.some(a => a.name === 'Insecta')) icon = 'fa-bug';
+            else if (taxon.ancestors?.some(a => a.name === 'Mammalia')) icon = 'fa-paw';
+            else if (taxon.ancestors?.some(a => a.name === 'Amphibia')) icon = 'fa-frog';
+
+            return {
+                name: taxon.preferred_common_name || taxon.name,
+                scientific: taxon.name,
+                type: category === 'species' ? 'species' : 'higher_taxon',
+                desc: taxon.preferred_common_name ? 
+                      `${taxon.preferred_common_name} (${taxon.name})` : 
+                      `Identified as ${taxon.name}`,
+                confidence: visionData.results[0]?.vision_score ? 
+                           `${Math.round(visionData.results[0].vision_score * 100)}%` : 
+                           'high',
+                icon: icon,
+                taxon_rank: taxon.rank,
+                observation_id: observationId,
+                url: result.uri
+            };
         }
 
-        // Save API Key
-        saveApiKeyBtn.addEventListener('click', () => {
-            const newKey = apiKeyInput.value.trim();
-            if (newKey) {
-                apiKey = newKey;
-                localStorage.setItem('gemini_api_key', apiKey);
-                apiModal.classList.add('hidden');
-                alert('✅ API key saved! Now upload a bird or plant photo.');
-            } else {
-                alert('Please enter a valid API key');
+        // Helper: base64 to Blob
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
-        });
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
 
-        settingsBtn.addEventListener('click', () => apiModal.classList.remove('hidden'));
-        closeModalBtn.addEventListener('click', () => apiModal.classList.add('hidden'));
-
-        // Helper: Convert image to base64 without data:image prefix
         function imageToBase64(dataURL) {
             return dataURL.split(',')[1];
         }
 
-        // Call Gemini Vision API
-        async function identifyWithGemini(imageBase64, mimeType = 'image/jpeg') {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            
-            const prompt = `You are a wildlife biologist. Identify exactly what is in this photo. 
-            If it's a bird, respond in this exact JSON format:
-            {"type":"bird","common_name":"[name]","scientific_name":"[scientific]","description":"[brief 1-sentence description]","confidence":"[high/medium/low]"}
-
-            If it's a plant (flower, tree, fern, etc.), respond in this exact JSON format:
-            {"type":"plant","common_name":"[name]","scientific_name":"[scientific]","description":"[brief 1-sentence description]","confidence":"[high/medium/low]"}
-
-            If it's neither, respond: {"type":"unknown","common_name":"Unknown","scientific_name":"","description":"Please upload a bird or plant photo.","confidence":"none"}
-
-            Only output valid JSON. No extra text.`;
-            
-            const requestBody = {
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        { inline_data: { mime_type: mimeType, data: imageBase64 } }
-                    ]
-                }]
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`API Error: ${response.status} - ${errorData.substring(0, 100)}`);
-            }
-
-            const data = await response.json();
-            const textResponse = data.candidates[0].content.parts[0].text;
-            
-            // Parse JSON from response
-            const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('Invalid response format');
-            
-            return JSON.parse(jsonMatch[0]);
-        }
-
-        // Process uploaded image
+        // ---------- PROCESS IMAGE ----------
         async function processImage(file) {
-            if (!apiKey) {
-                apiModal.classList.remove('hidden');
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 currentImageDataURL = ev.target.result;
@@ -275,46 +287,39 @@
                 placeholderDiv.classList.add('hidden');
                 resetBtn.classList.remove('hidden');
                 uploadBtn.classList.add('hidden');
-                
-                // Hide previous results
+
                 resultCard.classList.add('hidden');
                 errorMsgDiv.classList.add('hidden');
                 loadingIndicator.classList.remove('hidden');
-                
+
                 try {
-                    const mimeType = file.type;
                     const base64Data = imageToBase64(currentImageDataURL);
-                    const result = await identifyWithGemini(base64Data, mimeType);
-                    
+                    const result = await identifyWithINaturalist(base64Data, file.type);
+
                     loadingIndicator.classList.add('hidden');
-                    
-                    if (result.type === 'unknown') {
-                        errorTextSpan.innerText = result.description;
-                        errorMsgDiv.classList.remove('hidden');
-                        return;
-                    }
-                    
+
                     currentIdentification = {
-                        name: result.common_name,
-                        scientific: result.scientific_name,
+                        name: result.name,
+                        scientific: result.scientific,
                         type: result.type,
-                        desc: result.description,
-                        confidence: result.confidence || 'medium',
-                        icon: result.type === 'bird' ? 'fa-dove' : 'fa-leaf'
+                        desc: result.desc,
+                        confidence: result.confidence,
+                        icon: result.icon,
+                        observation_id: result.observation_id,
+                        url: result.url
                     };
-                    
-                    // Display result
+
                     resultName.innerText = currentIdentification.name;
                     resultScientific.innerText = currentIdentification.scientific;
                     resultDesc.innerText = currentIdentification.desc;
-                    resultTypeSpan.innerText = result.type === 'bird' ? '🐦 Bird' : '🌿 Plant';
+                    resultTypeSpan.innerText = result.type === 'species' ? '🌿 Species' : '🔬 Higher Taxon';
                     resultIcon.className = `fas ${currentIdentification.icon} text-emerald-600 text-xl`;
-                    confidenceBox.innerHTML = `<i class="fas fa-chart-line"></i> Confidence: ${currentIdentification.confidence}`;
+                    confidenceText.innerText = `Confidence: ${currentIdentification.confidence}`;
                     resultCard.classList.remove('hidden');
-                    
+
                 } catch (err) {
                     loadingIndicator.classList.add('hidden');
-                    errorTextSpan.innerText = `Error: ${err.message}. Check API key or try again.`;
+                    errorTextSpan.innerText = `Error: ${err.message}. Please try a clearer photo.`;
                     errorMsgDiv.classList.remove('hidden');
                     console.error(err);
                 }
@@ -322,14 +327,14 @@
             reader.readAsDataURL(file);
         }
 
-        // Upload handler
+        // ---------- UI EVENTS ----------
         uploadBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 processImage(e.target.files[0]);
             }
         });
-        
+
         resetBtn.addEventListener('click', () => {
             imagePreview.classList.add('hidden');
             placeholderDiv.classList.remove('hidden');
@@ -342,7 +347,7 @@
             fileInput.value = '';
         });
 
-        // Save to Journal (IndexedDB)
+        // ---------- JOURNAL (IndexedDB) ----------
         function initDB() {
             return new Promise((resolve) => {
                 const request = indexedDB.open('NatureLensJournalDB', 1);
@@ -428,6 +433,7 @@
                 type: currentIdentification.type,
                 desc: currentIdentification.desc,
                 icon: currentIdentification.icon,
+                confidence: currentIdentification.confidence,
                 date: new Date().toLocaleDateString(),
                 timestamp: Date.now()
             });
@@ -452,7 +458,7 @@
             loadJournal();
         });
 
-        // Initialize DB
+        // Init
         initDB();
     </script>
 </body>
