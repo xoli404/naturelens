@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>NatureLens — Powered by iNaturalist</title>
+    <title>NatureLens — Powered by Clarifai</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -20,21 +20,20 @@
 </head>
 <body>
     <div id="app" class="max-w-2xl mx-auto px-4 py-5 pb-24">
-        <!-- Header with ad placeholder -->
+        <!-- Header -->
         <div class="flex justify-between items-center mb-4 pt-2">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2">
                     <i class="fas fa-leaf text-emerald-600 text-2xl"></i> NatureLens
                 </h1>
-                <p class="text-sm text-gray-500 font-medium">🌿 powered by iNaturalist · free & accurate</p>
+                <p class="text-sm text-gray-500 font-medium">🔬 powered by Clarifai AI · free tier</p>
             </div>
-            <!-- Ad placeholder (shows to free users) -->
             <div id="adBadge" class="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-full font-semibold border border-yellow-300">
                 <i class="fas fa-ad"></i> Ad supported
             </div>
         </div>
 
-        <!-- AD BANNER (simulated for demo) -->
+        <!-- AD BANNER -->
         <div id="adBanner" class="bg-white/80 backdrop-blur-sm rounded-xl p-2 mb-4 text-center text-[10px] text-gray-400 border border-gray-200/50 shadow-sm">
             <i class="fas fa-ad text-emerald-400 mr-1"></i> Sponsor: <span class="font-medium text-gray-600">NatureLens Pro</span> — 
             <span id="adFreeCta" class="text-emerald-600 font-semibold cursor-pointer hover:underline">Remove ads → $1/month</span>
@@ -50,6 +49,20 @@
             </button>
         </div>
 
+        <!-- API Key Modal -->
+        <div id="apiModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-key text-emerald-600"></i> Clarifai API Key</h2>
+                    <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">Get your free key from <a href="https://portal.clarifai.com/signup" target="_blank" class="text-emerald-600 underline">Clarifai Portal</a> (1,000 calls/month free).</p>
+                <input type="password" id="apiKeyInput" placeholder="Paste your API key here" class="w-full border border-gray-300 rounded-xl px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <button id="saveApiKeyBtn" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-semibold">Save Key</button>
+                <p class="text-xs text-gray-400 mt-3">Key stored locally in your browser.</p>
+            </div>
+        </div>
+
         <!-- IDENTIFY PANEL -->
         <div id="identifyPanel" class="space-y-5 animate-fade">
             <div class="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl p-5 border border-white/50">
@@ -58,7 +71,7 @@
                     <div id="placeholderPreview" class="w-full rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 aspect-video flex flex-col items-center justify-center text-emerald-600">
                         <i class="fas fa-tree text-4xl mb-2 opacity-70"></i>
                         <p class="text-sm font-medium">Upload a bird, plant, or animal</p>
-                        <p class="text-xs text-gray-500">iNaturalist AI will identify it</p>
+                        <p class="text-xs text-gray-500">Clarifai AI will identify it</p>
                     </div>
                     
                     <div class="flex flex-wrap gap-3 justify-center mt-5 w-full">
@@ -77,8 +90,8 @@
             <div id="loadingIndicator" class="hidden bg-white rounded-2xl p-5 text-center">
                 <div class="flex flex-col items-center gap-3">
                     <div class="loading-spinner"></div>
-                    <p class="text-emerald-600 font-medium">🌍 Consulting iNaturalist AI...</p>
-                    <p class="text-xs text-gray-400">This takes 2-4 seconds</p>
+                    <p class="text-emerald-600 font-medium">🧠 Clarifai AI is analyzing...</p>
+                    <p class="text-xs text-gray-400">This takes 1-2 seconds</p>
                 </div>
             </div>
 
@@ -96,7 +109,7 @@
                         <p id="resultScientific" class="text-sm text-gray-500 italic mt-0.5">-</p>
                         <p id="resultDesc" class="text-gray-600 text-sm mt-2 leading-relaxed">-</p>
                         <div id="confidenceBox" class="mt-2 text-xs text-gray-400 flex items-center gap-2">
-                            <span class="bg-emerald-50 px-2 py-0.5 rounded-full text-emerald-700 text-[10px]">iNaturalist</span>
+                            <span class="bg-emerald-50 px-2 py-0.5 rounded-full text-emerald-700 text-[10px]">Clarifai</span>
                             <span id="confidenceText">Confidence: --</span>
                         </div>
                         <button id="saveToJournalBtn" class="mt-3 bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1 border border-emerald-200 hover:bg-emerald-100 transition">
@@ -130,13 +143,11 @@
 
     <script>
         // ---------- MONETIZATION LAYER ----------
-        // Simple state: free user by default, can "subscribe"
         let isAdFree = localStorage.getItem('naturelens_adfree') === 'true';
         const adBanner = document.getElementById('adBanner');
         const adBadge = document.getElementById('adBadge');
         const adFreeCta = document.getElementById('adFreeCta');
 
-        // Toggle ad state
         function updateAdState() {
             if (isAdFree) {
                 adBanner.style.display = 'none';
@@ -149,7 +160,6 @@
             }
         }
 
-        // Click to "subscribe" (simulated payment)
         adFreeCta.addEventListener('click', () => {
             if (confirm('Upgrade to NatureLens Pro for $1/month?\n\n✅ No ads\n✅ Unlimited identifications\n✅ Priority support')) {
                 isAdFree = true;
@@ -159,14 +169,10 @@
             }
         });
 
-        // Also allow "downgrade" (for testing) via console
-        window.resetAd = () => { isAdFree = false; localStorage.setItem('naturelens_adfree', 'false'); updateAdState(); };
-
         updateAdState();
 
-        // ---------- INDEXEDDB (JOURNAL) ----------
-        let db = null;
-        let journalEntries = [];
+        // ---------- CLARIFAI API ----------
+        let apiKey = localStorage.getItem('clarifai_api_key') || '';
         let currentImageDataURL = null;
         let currentIdentification = null;
 
@@ -195,82 +201,122 @@
         const journalCountSpan = document.getElementById('journalCount');
         const clearJournalBtn = document.getElementById('clearJournalBtn');
 
-        // ---------- iNATURALIST API ----------
-        async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
-            // Step 1: Create an observation (upload photo)
-            const formData = new FormData();
-            const blob = base64ToBlob(imageBase64, mimeType);
-            formData.append('photo[file]', blob, 'observation.jpg');
+        // API Key Modal
+        const apiModal = document.getElementById('apiModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
 
-            const uploadResponse = await fetch('https://www.inaturalist.org/observations.json', {
-                method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error(`Upload failed: ${uploadResponse.status}`);
-            }
-
-            const uploadData = await uploadResponse.json();
-            const observationId = uploadData.id;
-
-            // Step 2: Get AI identification results
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for processing
-
-            const visionResponse = await fetch(`https://api.inaturalist.org/v1/observations/${observationId}`, {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!visionResponse.ok) {
-                throw new Error(`Vision API failed: ${visionResponse.status}`);
-            }
-
-            const visionData = await visionResponse.json();
-            
-            // Parse the result
-            const result = visionData.results?.[0];
-            if (!result || !result.taxon) {
-                throw new Error('No identification found. Try a clearer photo.');
-            }
-
-            const taxon = result.taxon;
-            const category = taxon.rank_level <= 10 ? 'species' : 'higher taxonomy';
-            
-            // Map icon based on taxon category
-            let icon = 'fa-leaf';
-            if (taxon.ancestors?.some(a => a.name === 'Aves')) icon = 'fa-dove';
-            else if (taxon.ancestors?.some(a => a.name === 'Plantae')) icon = 'fa-seedling';
-            else if (taxon.ancestors?.some(a => a.name === 'Insecta')) icon = 'fa-bug';
-            else if (taxon.ancestors?.some(a => a.name === 'Mammalia')) icon = 'fa-paw';
-            else if (taxon.ancestors?.some(a => a.name === 'Amphibia')) icon = 'fa-frog';
-
-            return {
-                name: taxon.preferred_common_name || taxon.name,
-                scientific: taxon.name,
-                type: category === 'species' ? 'species' : 'higher_taxon',
-                desc: taxon.preferred_common_name ? 
-                      `${taxon.preferred_common_name} (${taxon.name})` : 
-                      `Identified as ${taxon.name}`,
-                confidence: visionData.results[0]?.vision_score ? 
-                           `${Math.round(visionData.results[0].vision_score * 100)}%` : 
-                           'high',
-                icon: icon,
-                taxon_rank: taxon.rank,
-                observation_id: observationId,
-                url: result.uri
-            };
+        if (!apiKey) {
+            setTimeout(() => { apiModal.classList.remove('hidden'); }, 500);
         }
 
-        // Helper: base64 to Blob
-        function base64ToBlob(base64, mimeType) {
-            const byteCharacters = atob(base64);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
+        saveApiKeyBtn.addEventListener('click', () => {
+            const newKey = apiKeyInput.value.trim();
+            if (newKey) {
+                apiKey = newKey;
+                localStorage.setItem('clarifai_api_key', apiKey);
+                apiModal.classList.add('hidden');
+                alert('✅ API key saved! Now upload a photo.');
+            } else {
+                alert('Please enter a valid API key');
             }
-            const byteArray = new Uint8Array(byteNumbers);
-            return new Blob([byteArray], { type: mimeType });
+        });
+
+        settingsBtn = document.createElement('button');
+        // We'll use a hidden settings trigger via the key icon in header
+        document.querySelector('.flex.justify-between.items-center.mb-4 .flex-1') // just a placeholder; let's add a settings button manually
+
+        // Actually, add a settings button to the header
+        const headerDiv = document.querySelector('.flex.justify-between.items-center.mb-4');
+        const settingsBtn = document.createElement('button');
+        settingsBtn.id = 'settingsBtn';
+        settingsBtn.className = 'bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-sm text-gray-700 w-9 h-9 flex items-center justify-center';
+        settingsBtn.innerHTML = '<i class="fas fa-key"></i>';
+        headerDiv.appendChild(settingsBtn);
+
+        settingsBtn.addEventListener('click', () => apiModal.classList.remove('hidden'));
+        closeModalBtn.addEventListener('click', () => apiModal.classList.add('hidden'));
+
+        // ---------- CLARIFAI IDENTIFICATION ----------
+        async function identifyWithClarifai(imageBase64) {
+            const url = 'https://api.clarifai.com/v2/models/general-image-recognition/outputs';
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Key ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: [{
+                        data: {
+                            image: {
+                                base64: imageBase64
+                            }
+                        }
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Clarifai API error: ${errorData.status?.description || response.status}`);
+            }
+
+            const data = await response.json();
+            const concepts = data.outputs[0].data.concepts;
+            
+            if (!concepts || concepts.length === 0) {
+                throw new Error('No concepts identified. Try a clearer photo.');
+            }
+
+            // Get top 5 results
+            const topConcepts = concepts.slice(0, 5);
+            
+            // Categorize the top result
+            const top = topConcepts[0];
+            const name = top.name;
+            const confidence = Math.round(top.value * 100);
+
+            // Determine if it's bird, plant, or animal
+            const allNames = topConcepts.map(c => c.name.toLowerCase()).join(' ');
+            let type = 'organism';
+            let icon = 'fa-leaf';
+            let scientific = '';
+
+            if (allNames.includes('bird') || allNames.includes('avian')) {
+                type = 'bird';
+                icon = 'fa-dove';
+            } else if (allNames.includes('plant') || allNames.includes('flower') || allNames.includes('tree') || allNames.includes('leaf')) {
+                type = 'plant';
+                icon = 'fa-seedling';
+            } else if (allNames.includes('mammal') || allNames.includes('animal')) {
+                type = 'animal';
+                icon = 'fa-paw';
+            } else if (allNames.includes('insect') || allNames.includes('butterfly') || allNames.includes('bee')) {
+                type = 'insect';
+                icon = 'fa-bug';
+            } else if (allNames.includes('reptile') || allNames.includes('snake') || allNames.includes('lizard')) {
+                type = 'reptile';
+                icon = 'fa-dragon';
+            } else if (allNames.includes('amphibian') || allNames.includes('frog')) {
+                type = 'amphibian';
+                icon = 'fa-frog';
+            }
+
+            // Build description from top concepts
+            const desc = topConcepts.map(c => `${c.name} (${Math.round(c.value * 100)}%)`).join(', ');
+
+            return {
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                scientific: scientific || 'Clarifai general model',
+                type: type,
+                desc: `I see: ${desc}`,
+                confidence: `${confidence}%`,
+                icon: icon,
+                all_concepts: topConcepts
+            };
         }
 
         function imageToBase64(dataURL) {
@@ -279,6 +325,11 @@
 
         // ---------- PROCESS IMAGE ----------
         async function processImage(file) {
+            if (!apiKey) {
+                apiModal.classList.remove('hidden');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 currentImageDataURL = ev.target.result;
@@ -294,7 +345,7 @@
 
                 try {
                     const base64Data = imageToBase64(currentImageDataURL);
-                    const result = await identifyWithINaturalist(base64Data, file.type);
+                    const result = await identifyWithClarifai(base64Data);
 
                     loadingIndicator.classList.add('hidden');
 
@@ -304,22 +355,30 @@
                         type: result.type,
                         desc: result.desc,
                         confidence: result.confidence,
-                        icon: result.icon,
-                        observation_id: result.observation_id,
-                        url: result.url
+                        icon: result.icon
                     };
 
                     resultName.innerText = currentIdentification.name;
                     resultScientific.innerText = currentIdentification.scientific;
                     resultDesc.innerText = currentIdentification.desc;
-                    resultTypeSpan.innerText = result.type === 'species' ? '🌿 Species' : '🔬 Higher Taxon';
+                    
+                    const typeEmoji = {
+                        'bird': '🐦',
+                        'plant': '🌿',
+                        'animal': '🐾',
+                        'insect': '🐛',
+                        'reptile': '🦎',
+                        'amphibian': '🐸',
+                        'organism': '🌱'
+                    };
+                    resultTypeSpan.innerText = typeEmoji[currentIdentification.type] || '🌱';
                     resultIcon.className = `fas ${currentIdentification.icon} text-emerald-600 text-xl`;
                     confidenceText.innerText = `Confidence: ${currentIdentification.confidence}`;
                     resultCard.classList.remove('hidden');
 
                 } catch (err) {
                     loadingIndicator.classList.add('hidden');
-                    errorTextSpan.innerText = `Error: ${err.message}. Please try a clearer photo.`;
+                    errorTextSpan.innerText = `Error: ${err.message}`;
                     errorMsgDiv.classList.remove('hidden');
                     console.error(err);
                 }
@@ -348,6 +407,9 @@
         });
 
         // ---------- JOURNAL (IndexedDB) ----------
+        let db = null;
+        let journalEntries = [];
+
         function initDB() {
             return new Promise((resolve) => {
                 const request = indexedDB.open('NatureLensJournalDB', 1);
