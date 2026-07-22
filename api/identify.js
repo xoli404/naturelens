@@ -2,7 +2,6 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 export default async function handler(req, res) {
-    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -18,27 +17,27 @@ export default async function handler(req, res) {
 
     try {
         const { image, mimeType } = req.body;
+        if (!image) return res.status(400).json({ error: 'No image provided' });
 
-        if (!image) {
-            return res.status(400).json({ error: 'No image provided' });
+        // Read the API key from Vercel environment variables
+        const PLANT_ID_API_KEY = process.env.PLANT_ID_API_KEY;
+        if (!PLANT_ID_API_KEY) {
+            throw new Error('Plant.id API key not configured on server.');
         }
 
-        // Convert base64 to buffer
         const buffer = Buffer.from(image, 'base64');
-
-        // Create form data for iNaturalist
         const formData = new FormData();
-        formData.append('image', buffer, {
-            filename: 'observation.jpg',
+        formData.append('images', buffer, {
+            filename: 'plant.jpg',
             contentType: mimeType || 'image/jpeg'
         });
 
-        // iNaturalist Computer Vision API (NO API KEY NEEDED)
-        const response = await fetch('https://api.inaturalist.org/v1/computervision/score_image', {
+        const response = await fetch('https://api.plant.id/v2/identify', {
             method: 'POST',
             body: formData,
             headers: {
                 ...formData.getHeaders(),
+                'Api-Key': PLANT_ID_API_KEY,
                 'Accept': 'application/json'
             },
             timeout: 20000
@@ -46,75 +45,37 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`iNaturalist API failed: ${response.status} - ${errorText}`);
+            throw new Error(`Plant.id API failed: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-
-        if (!data || !data.results || data.results.length === 0) {
-            throw new Error('No identification found. Try a clearer photo.');
+        if (!data.suggestions || data.suggestions.length === 0) {
+            throw new Error('No identification found. Try a clearer photo of a plant.');
         }
 
-        // Get top result
-        const topResult = data.results[0];
-        const taxon = topResult.taxon;
+        const topResult = data.suggestions[0];
+        const plantName = topResult.plant_name || 'Unknown plant';
+        const scientificName = topResult.plant_details?.scientific_name || plantName;
+        const probability = topResult.probability ? `${Math.round(topResult.probability * 100)}%` : 'high';
+        const commonNames = topResult.plant_details?.common_names || [];
+        const commonNameStr = commonNames.length > 0 ? commonNames.join(', ') : '';
 
-        if (!taxon) {
-            throw new Error('No taxon information found.');
-        }
-
-        // Determine icon and type
-        let icon = 'fa-leaf';
-        let type = 'organism';
-
-        const ancestors = taxon.ancestors || [];
-        const ancestorNames = ancestors.map(a => a.name);
-
-        if (ancestorNames.includes('Aves')) {
-            icon = 'fa-dove';
-            type = 'bird';
-        } else if (ancestorNames.includes('Plantae')) {
-            icon = 'fa-seedling';
-            type = 'plant';
-        } else if (ancestorNames.includes('Insecta')) {
-            icon = 'fa-bug';
-            type = 'insect';
-        } else if (ancestorNames.includes('Mammalia')) {
-            icon = 'fa-paw';
-            type = 'animal';
-        } else if (ancestorNames.includes('Amphibia')) {
-            icon = 'fa-frog';
-            type = 'amphibian';
-        } else if (ancestorNames.includes('Reptilia')) {
-            icon = 'fa-dragon';
-            type = 'reptile';
-        } else if (ancestorNames.includes('Fungi')) {
-            icon = 'fa-mushroom';
-            type = 'fungi';
-        }
-
-        // Calculate confidence
-        const confidence = topResult.score ? `${Math.round(topResult.score * 100)}%` : 'high';
-
-        // Build response
-        const responseData = {
-            taxon_name: taxon.name,
-            common_name: taxon.preferred_common_name || taxon.name,
-            type: type,
-            icon: icon,
-            confidence: confidence,
-            description: taxon.preferred_common_name ?
-                `${taxon.preferred_common_name} (${taxon.name})` :
-                `Identified as ${taxon.name}`,
-            rank: taxon.rank,
-            all_matches: data.results.slice(0, 5).map(r => ({
-                name: r.taxon.name,
-                common_name: r.taxon.preferred_common_name || r.taxon.name,
-                score: `${Math.round(r.score * 100)}%`
+        res.status(200).json({
+            taxon_name: scientificName,
+            common_name: commonNameStr || plantName,
+            type: 'plant',
+            icon: 'fa-seedling',
+            confidence: probability,
+            description: commonNameStr ? 
+                `${commonNameStr} (${scientificName})` : 
+                `Identified as ${scientificName || plantName}`,
+            rank: 'species',
+            all_matches: data.suggestions.slice(0, 5).map(s => ({
+                name: s.plant_name || 'Unknown',
+                common_name: s.plant_details?.common_names?.join(', ') || '',
+                score: `${Math.round(s.probability * 100)}%`
             }))
-        };
-
-        res.status(200).json(responseData);
+        });
 
     } catch (err) {
         console.error('Error:', err);
