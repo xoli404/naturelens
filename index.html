@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>NatureLens — Powered by iNaturalist</title>
+    <title>NatureLens — Powered by Plant.id</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -26,7 +26,7 @@
                 <h1 class="text-3xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2">
                     <i class="fas fa-leaf text-emerald-600 text-2xl"></i> NatureLens
                 </h1>
-                <p class="text-sm text-gray-500 font-medium">🌿 powered by iNaturalist · free & accurate</p>
+                <p class="text-sm text-gray-500 font-medium">🌿 powered by Plant.id · free & accurate</p>
             </div>
             <div id="adBadge" class="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-full font-semibold border border-yellow-300">
                 <i class="fas fa-ad"></i> Ad supported
@@ -56,8 +56,8 @@
                     <img id="imagePreview" class="w-full rounded-2xl border-2 border-emerald-200 bg-gray-100 aspect-video object-cover hidden" alt="Preview">
                     <div id="placeholderPreview" class="w-full rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 aspect-video flex flex-col items-center justify-center text-emerald-600">
                         <i class="fas fa-tree text-4xl mb-2 opacity-70"></i>
-                        <p class="text-sm font-medium">Upload a bird, plant, or animal</p>
-                        <p class="text-xs text-gray-500">iNaturalist AI will identify it</p>
+                        <p class="text-sm font-medium">Upload a plant or flower</p>
+                        <p class="text-xs text-gray-500">Plant.id AI will identify it</p>
                     </div>
                     
                     <div class="flex flex-wrap gap-3 justify-center mt-5 w-full">
@@ -76,7 +76,7 @@
             <div id="loadingIndicator" class="hidden bg-white rounded-2xl p-5 text-center">
                 <div class="flex flex-col items-center gap-3">
                     <div class="loading-spinner"></div>
-                    <p class="text-emerald-600 font-medium">🌍 Consulting iNaturalist AI...</p>
+                    <p class="text-emerald-600 font-medium">🌱 Plant.id AI is analyzing...</p>
                     <p class="text-xs text-gray-400">This takes 2-4 seconds</p>
                 </div>
             </div>
@@ -95,7 +95,7 @@
                         <p id="resultScientific" class="text-sm text-gray-500 italic mt-0.5">-</p>
                         <p id="resultDesc" class="text-gray-600 text-sm mt-2 leading-relaxed">-</p>
                         <div id="confidenceBox" class="mt-2 text-xs text-gray-400 flex items-center gap-2">
-                            <span class="bg-emerald-50 px-2 py-0.5 rounded-full text-emerald-700 text-[10px]">iNaturalist</span>
+                            <span class="bg-emerald-50 px-2 py-0.5 rounded-full text-emerald-700 text-[10px]">Plant.id</span>
                             <span id="confidenceText">Confidence: --</span>
                         </div>
                         <button id="saveToJournalBtn" class="mt-3 bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1 border border-emerald-200 hover:bg-emerald-100 transition">
@@ -186,30 +186,32 @@
         let currentIdentification = null;
 
         // ---------- CALL OUR OWN API (Vercel Function) ----------
-     // ---------- CALL OUR OWN API (Vercel Function) ----------
-async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
-    const response = await fetch('/api/identify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            image: imageBase64,
-            mimeType: mimeType
-        })
-    });
+        // This function now correctly calls the Plant.id backend
+        async function identifyWithPlantId(imageBase64, mimeType = 'image/jpeg') {
+            const response = await fetch('/api/identify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: imageBase64,
+                    mimeType: mimeType
+                })
+            });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-    }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Server error: ${response.status}`);
+            }
 
-    const data = await response.json();
-    
-    if (!data || !data.taxon_name) {
-        throw new Error('No identification found. Try a clearer photo.');
-    }
+            const data = await response.json();
+            
+            // Check if we got a valid plant identification
+            if (!data || !data.taxon_name) {
+                throw new Error('No plant found. Try a clearer photo of a flower or leaf.');
+            }
 
-    return data;
-}
+            return data;
+        }
+
         function imageToBase64(dataURL) {
             return dataURL.split(',')[1];
         }
@@ -231,17 +233,18 @@ async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
 
                 try {
                     const base64Data = imageToBase64(currentImageDataURL);
-                    const result = await identifyWithINaturalist(base64Data, file.type);
+                    // Calling the correct function for Plant.id
+                    const result = await identifyWithPlantId(base64Data, file.type);
 
                     loadingIndicator.classList.add('hidden');
 
                     currentIdentification = {
                         name: result.common_name || result.taxon_name,
                         scientific: result.taxon_name,
-                        type: result.type || 'organism',
-                        desc: result.description || `${result.common_name || result.taxon_name} identified by iNaturalist`,
+                        type: result.type || 'plant',
+                        desc: result.description || `${result.common_name || result.taxon_name} identified by Plant.id`,
                         confidence: result.confidence || 'high',
-                        icon: result.icon || 'fa-leaf'
+                        icon: result.icon || 'fa-seedling'
                     };
 
                     resultName.innerText = currentIdentification.name;
@@ -249,12 +252,9 @@ async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
                     resultDesc.innerText = currentIdentification.desc;
                     
                     const typeEmoji = {
-                        'bird': '🐦',
                         'plant': '🌿',
-                        'animal': '🐾',
-                        'insect': '🐛',
-                        'reptile': '🦎',
-                        'amphibian': '🐸',
+                        'flower': '🌸',
+                        'tree': '🌳',
                         'organism': '🌱'
                     };
                     resultTypeSpan.innerText = typeEmoji[currentIdentification.type] || '🌱';
