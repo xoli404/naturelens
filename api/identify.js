@@ -26,18 +26,23 @@ export default async function handler(req, res) {
         // Convert base64 to buffer
         const buffer = Buffer.from(image, 'base64');
 
-        // Create form data for the computer vision API
+        // Create form data
         const formData = new FormData();
         formData.append('image', buffer, {
             filename: 'observation.jpg',
             contentType: mimeType || 'image/jpeg'
         });
 
-        // Call iNaturalist's Computer Vision API (no authentication needed!)
-        const visionResponse = await fetch('https://api.inaturalist.org/v1/computervision/score_image', {
+        // Try the alternative endpoint: /v1/computervision
+        // Some versions work better with this URL
+        const visionResponse = await fetch('https://api.inaturalist.org/v1/computervision', {
             method: 'POST',
             body: formData,
-            headers: formData.getHeaders()
+            headers: {
+                ...formData.getHeaders(),
+                'User-Agent': 'NatureLens/1.0 (https://naturelens.vercel.app)'
+            },
+            timeout: 15000 // 15 seconds timeout
         });
 
         if (!visionResponse.ok) {
@@ -103,7 +108,6 @@ export default async function handler(req, res) {
                 `${taxon.preferred_common_name} (${taxon.name})` :
                 `Identified as ${taxon.name}`,
             rank: taxon.rank,
-            // Include additional matches for reference
             all_matches: visionData.results.slice(0, 5).map(r => ({
                 name: r.taxon.name,
                 common_name: r.taxon.preferred_common_name || r.taxon.name,
