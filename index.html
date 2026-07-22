@@ -187,7 +187,8 @@
 
         // ---------- CALL OUR OWN API (Vercel Function) ----------
         // ---------- CALL OUR OWN API (Vercel Function) ----------
-async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
+// ---------- CALL OUR OWN API (Vercel Function) ----------
+async function identifyWithPlantId(imageBase64, mimeType = 'image/jpeg') {
     const response = await fetch('/api/identify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,13 +205,13 @@ async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
 
     const data = await response.json();
     
+    // Plant.id returns data.taxon_name
     if (!data || !data.taxon_name) {
-        throw new Error('No identification found. Try a clearer photo.');
+        throw new Error('No identification found. Try a clearer photo of a plant.');
     }
 
     return data;
 }
-
         function imageToBase64(dataURL) {
             return dataURL.split(',')[1];
         }
