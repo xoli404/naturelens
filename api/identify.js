@@ -1,8 +1,8 @@
-import FormData from 'form-data';
 import fetch from 'node-fetch';
+import FormData from 'form-data';
 
 export default async function handler(req, res) {
-    // Allow CORS (important for local testing)
+    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,83 +23,92 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'No image provided' });
         }
 
-        // Step 1: Upload image to iNaturalist
+        // Convert base64 to buffer
         const buffer = Buffer.from(image, 'base64');
+
+        // Create form data for the computer vision API
         const formData = new FormData();
-        formData.append('photo[file]', buffer, {
+        formData.append('image', buffer, {
             filename: 'observation.jpg',
             contentType: mimeType || 'image/jpeg'
         });
 
-        const uploadRes = await fetch('https://www.inaturalist.org/observations.json', {
+        // Call iNaturalist's Computer Vision API (no authentication needed!)
+        const visionResponse = await fetch('https://api.inaturalist.org/v1/computervision/score_image', {
             method: 'POST',
             body: formData,
             headers: formData.getHeaders()
         });
 
-        if (!uploadRes.ok) {
-            const errorText = await uploadRes.text();
-            throw new Error(`iNaturalist upload failed: ${uploadRes.status} - ${errorText}`);
+        if (!visionResponse.ok) {
+            const errorText = await visionResponse.text();
+            throw new Error(`iNaturalist vision API failed: ${visionResponse.status} - ${errorText}`);
         }
 
-        const uploadData = await uploadRes.json();
-        const observationId = uploadData.id;
+        const visionData = await visionResponse.json();
 
-        if (!observationId) {
-            throw new Error('No observation ID returned');
-        }
-
-        // Step 2: Wait for iNaturalist to process the image
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Step 3: Get the identification results
-        const visionRes = await fetch(`https://api.inaturalist.org/v1/observations/${observationId}`, {
-            headers: { 'Accept': 'application/json' }
-        });
-
-        if (!visionRes.ok) {
-            throw new Error(`iNaturalist vision API failed: ${visionRes.status}`);
-        }
-
-        const visionData = await visionRes.json();
-        const result = visionData.results?.[0];
-
-        if (!result || !result.taxon) {
+        if (!visionData || !visionData.results || visionData.results.length === 0) {
             throw new Error('No identification found. Try a clearer photo.');
         }
 
-        const taxon = result.taxon;
+        // Get the top result
+        const topResult = visionData.results[0];
+        const taxon = topResult.taxon;
+
+        if (!taxon) {
+            throw new Error('No taxon information found.');
+        }
 
         // Determine icon based on taxonomic rank
         let icon = 'fa-leaf';
-        if (taxon.ancestors?.some(a => a.name === 'Aves')) icon = 'fa-dove';
-        else if (taxon.ancestors?.some(a => a.name === 'Plantae')) icon = 'fa-seedling';
-        else if (taxon.ancestors?.some(a => a.name === 'Insecta')) icon = 'fa-bug';
-        else if (taxon.ancestors?.some(a => a.name === 'Mammalia')) icon = 'fa-paw';
-        else if (taxon.ancestors?.some(a => a.name === 'Amphibia')) icon = 'fa-frog';
-        else if (taxon.ancestors?.some(a => a.name === 'Reptilia')) icon = 'fa-dragon';
-
-        // Determine type
         let type = 'organism';
-        if (taxon.ancestors?.some(a => a.name === 'Aves')) type = 'bird';
-        else if (taxon.ancestors?.some(a => a.name === 'Plantae')) type = 'plant';
-        else if (taxon.ancestors?.some(a => a.name === 'Insecta')) type = 'insect';
-        else if (taxon.ancestors?.some(a => a.name === 'Mammalia')) type = 'animal';
-        else if (taxon.ancestors?.some(a => a.name === 'Amphibia')) type = 'amphibian';
-        else if (taxon.ancestors?.some(a => a.name === 'Reptilia')) type = 'reptile';
 
+        const ancestors = taxon.ancestors || [];
+        const ancestorNames = ancestors.map(a => a.name);
+
+        if (ancestorNames.includes('Aves')) {
+            icon = 'fa-dove';
+            type = 'bird';
+        } else if (ancestorNames.includes('Plantae')) {
+            icon = 'fa-seedling';
+            type = 'plant';
+        } else if (ancestorNames.includes('Insecta')) {
+            icon = 'fa-bug';
+            type = 'insect';
+        } else if (ancestorNames.includes('Mammalia')) {
+            icon = 'fa-paw';
+            type = 'animal';
+        } else if (ancestorNames.includes('Amphibia')) {
+            icon = 'fa-frog';
+            type = 'amphibian';
+        } else if (ancestorNames.includes('Reptilia')) {
+            icon = 'fa-dragon';
+            type = 'reptile';
+        } else if (ancestorNames.includes('Fungi')) {
+            icon = 'fa-mushroom';
+            type = 'fungi';
+        }
+
+        // Calculate confidence percentage
+        const confidence = topResult.score ? `${Math.round(topResult.score * 100)}%` : 'high';
+
+        // Build response
         const responseData = {
             taxon_name: taxon.name,
             common_name: taxon.preferred_common_name || taxon.name,
             type: type,
             icon: icon,
-            confidence: result.vision_score ? `${Math.round(result.vision_score * 100)}%` : 'high',
+            confidence: confidence,
             description: taxon.preferred_common_name ?
                 `${taxon.preferred_common_name} (${taxon.name})` :
                 `Identified as ${taxon.name}`,
-            observation_id: observationId,
-            url: result.uri,
-            rank: taxon.rank
+            rank: taxon.rank,
+            // Include additional matches for reference
+            all_matches: visionData.results.slice(0, 5).map(r => ({
+                name: r.taxon.name,
+                common_name: r.taxon.preferred_common_name || r.taxon.name,
+                score: `${Math.round(r.score * 100)}%`
+            }))
         };
 
         res.status(200).json(responseData);
