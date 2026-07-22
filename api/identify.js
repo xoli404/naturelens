@@ -26,93 +26,63 @@ export default async function handler(req, res) {
         // Convert base64 to buffer
         const buffer = Buffer.from(image, 'base64');
 
-        // Create form data
+        // Create form data for Plant.id
         const formData = new FormData();
-        formData.append('image', buffer, {
-            filename: 'observation.jpg',
+        formData.append('images', buffer, {
+            filename: 'plant.jpg',
             contentType: mimeType || 'image/jpeg'
         });
 
-        // Try the alternative endpoint: /v1/computervision
-        // Some versions work better with this URL
-        const visionResponse = await fetch('https://api.inaturalist.org/v1/computervision', {
+        // Plant.id API endpoint (free tier, no API key needed for basic)
+        const response = await fetch('https://api.plant.id/v2/identify', {
             method: 'POST',
             body: formData,
             headers: {
                 ...formData.getHeaders(),
-                'User-Agent': 'NatureLens/1.0 (https://naturelens.vercel.app)'
+                'Accept': 'application/json'
             },
-            timeout: 15000 // 15 seconds timeout
+            timeout: 20000
         });
 
-        if (!visionResponse.ok) {
-            const errorText = await visionResponse.text();
-            throw new Error(`iNaturalist vision API failed: ${visionResponse.status} - ${errorText}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Plant.id API failed: ${response.status} - ${errorText}`);
         }
 
-        const visionData = await visionResponse.json();
+        const data = await response.json();
 
-        if (!visionData || !visionData.results || visionData.results.length === 0) {
-            throw new Error('No identification found. Try a clearer photo.');
+        // Check if we got results
+        if (!data.suggestions || data.suggestions.length === 0) {
+            throw new Error('No identification found. Try a clearer photo of a plant.');
         }
 
-        // Get the top result
-        const topResult = visionData.results[0];
-        const taxon = topResult.taxon;
+        // Get top result
+        const topResult = data.suggestions[0];
+        const plantName = topResult.plant_name || 'Unknown plant';
+        const scientificName = topResult.plant_details?.scientific_name || plantName;
+        const probability = topResult.probability ? `${Math.round(topResult.probability * 100)}%` : 'high';
 
-        if (!taxon) {
-            throw new Error('No taxon information found.');
-        }
+        // Build a description from the data
+        const commonNames = topResult.plant_details?.common_names || [];
+        const commonNameStr = commonNames.length > 0 ? commonNames.join(', ') : '';
 
-        // Determine icon based on taxonomic rank
-        let icon = 'fa-leaf';
-        let type = 'organism';
-
-        const ancestors = taxon.ancestors || [];
-        const ancestorNames = ancestors.map(a => a.name);
-
-        if (ancestorNames.includes('Aves')) {
-            icon = 'fa-dove';
-            type = 'bird';
-        } else if (ancestorNames.includes('Plantae')) {
-            icon = 'fa-seedling';
-            type = 'plant';
-        } else if (ancestorNames.includes('Insecta')) {
-            icon = 'fa-bug';
-            type = 'insect';
-        } else if (ancestorNames.includes('Mammalia')) {
-            icon = 'fa-paw';
-            type = 'animal';
-        } else if (ancestorNames.includes('Amphibia')) {
-            icon = 'fa-frog';
-            type = 'amphibian';
-        } else if (ancestorNames.includes('Reptilia')) {
-            icon = 'fa-dragon';
-            type = 'reptile';
-        } else if (ancestorNames.includes('Fungi')) {
-            icon = 'fa-mushroom';
-            type = 'fungi';
-        }
-
-        // Calculate confidence percentage
-        const confidence = topResult.score ? `${Math.round(topResult.score * 100)}%` : 'high';
-
-        // Build response
         const responseData = {
-            taxon_name: taxon.name,
-            common_name: taxon.preferred_common_name || taxon.name,
-            type: type,
-            icon: icon,
-            confidence: confidence,
-            description: taxon.preferred_common_name ?
-                `${taxon.preferred_common_name} (${taxon.name})` :
-                `Identified as ${taxon.name}`,
-            rank: taxon.rank,
-            all_matches: visionData.results.slice(0, 5).map(r => ({
-                name: r.taxon.name,
-                common_name: r.taxon.preferred_common_name || r.taxon.name,
-                score: `${Math.round(r.score * 100)}%`
-            }))
+            taxon_name: scientificName,
+            common_name: commonNameStr || plantName,
+            type: 'plant',
+            icon: 'fa-seedling',
+            confidence: probability,
+            description: commonNameStr ? 
+                `${commonNameStr} (${scientificName})` : 
+                `Identified as ${scientificName || plantName}`,
+            rank: 'species',
+            all_matches: data.suggestions.slice(0, 5).map(s => ({
+                name: s.plant_name || 'Unknown',
+                common_name: s.plant_details?.common_names?.join(', ') || '',
+                score: `${Math.round(s.probability * 100)}%`
+            })),
+            // Include the raw data for debugging if needed
+            raw_response: data
         };
 
         res.status(200).json(responseData);
