@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         }
 
         // Your Plant.id API key from admin.kindwise.com
-        const PLANT_ID_API_KEY = 'YOUR_API_KEY_HERE'; // <-- REPLACE THIS
+        const PLANT_ID_API_KEY = process.env.PLANT_ID_API_KEY;
 
         const buffer = Buffer.from(image, 'base64');
 
