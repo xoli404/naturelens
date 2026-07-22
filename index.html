@@ -186,29 +186,30 @@
         let currentIdentification = null;
 
         // ---------- CALL OUR OWN API (Vercel Function) ----------
-        async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
-            const response = await fetch('/api/identify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: imageBase64,
-                    mimeType: mimeType
-                })
-            });
+        // ---------- CALL OUR OWN API (Vercel Function) ----------
+async function identifyWithINaturalist(imageBase64, mimeType = 'image/jpeg') {
+    const response = await fetch('/api/identify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            image: imageBase64,
+            mimeType: mimeType
+        })
+    });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Server error: ${response.status}`);
-            }
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
 
-            const data = await response.json();
-            
-            if (!data || !data.taxon) {
-                throw new Error('No identification found. Try a clearer photo.');
-            }
+    const data = await response.json();
+    
+    if (!data || !data.taxon_name) {
+        throw new Error('No identification found. Try a clearer photo.');
+    }
 
-            return data;
-        }
+    return data;
+}
 
         function imageToBase64(dataURL) {
             return dataURL.split(',')[1];
