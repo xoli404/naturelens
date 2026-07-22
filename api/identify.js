@@ -2,7 +2,6 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 export default async function handler(req, res) {
-    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,22 +22,23 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'No image provided' });
         }
 
-        // Convert base64 to buffer
+        // Your Plant.id API key from admin.kindwise.com
+        const PLANT_ID_API_KEY = 'YOUR_API_KEY_HERE'; // <-- REPLACE THIS
+
         const buffer = Buffer.from(image, 'base64');
 
-        // Create form data for Plant.id
         const formData = new FormData();
         formData.append('images', buffer, {
             filename: 'plant.jpg',
             contentType: mimeType || 'image/jpeg'
         });
 
-        // Plant.id API endpoint (free tier, no API key needed for basic)
         const response = await fetch('https://api.plant.id/v2/identify', {
             method: 'POST',
             body: formData,
             headers: {
                 ...formData.getHeaders(),
+                'Api-Key': PLANT_ID_API_KEY,  // <-- REQUIRED
                 'Accept': 'application/json'
             },
             timeout: 20000
@@ -51,22 +51,19 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // Check if we got results
         if (!data.suggestions || data.suggestions.length === 0) {
             throw new Error('No identification found. Try a clearer photo of a plant.');
         }
 
-        // Get top result
         const topResult = data.suggestions[0];
         const plantName = topResult.plant_name || 'Unknown plant';
         const scientificName = topResult.plant_details?.scientific_name || plantName;
         const probability = topResult.probability ? `${Math.round(topResult.probability * 100)}%` : 'high';
 
-        // Build a description from the data
         const commonNames = topResult.plant_details?.common_names || [];
         const commonNameStr = commonNames.length > 0 ? commonNames.join(', ') : '';
 
-        const responseData = {
+        res.status(200).json({
             taxon_name: scientificName,
             common_name: commonNameStr || plantName,
             type: 'plant',
@@ -80,12 +77,8 @@ export default async function handler(req, res) {
                 name: s.plant_name || 'Unknown',
                 common_name: s.plant_details?.common_names?.join(', ') || '',
                 score: `${Math.round(s.probability * 100)}%`
-            })),
-            // Include the raw data for debugging if needed
-            raw_response: data
-        };
-
-        res.status(200).json(responseData);
+            }))
+        });
 
     } catch (err) {
         console.error('Error:', err);
